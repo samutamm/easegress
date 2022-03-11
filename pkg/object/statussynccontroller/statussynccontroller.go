@@ -18,6 +18,9 @@
 package statussynccontroller
 
 import (
+	"compress/gzip"
+
+	"bytes"
 	"runtime/debug"
 	"sync"
 
@@ -180,7 +183,15 @@ func (ssc *StatusSyncController) handleStatus(unixTimestamp int64) {
 				status, err)
 			return false
 		}
-		statuses[name] = string(buff)
+		var compressed bytes.Buffer
+		gz := gzip.NewWriter(&compressed)
+		if _, err := gz.Write(buff); err != nil {
+			logger.Errorf(err.Error())
+		}
+		if err := gz.Close(); err != nil {
+			logger.Errorf(err.Error())
+		}
+		statuses[name] = string(compressed.Bytes())
 
 		return true
 	}
